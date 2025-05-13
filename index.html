@@ -1,0 +1,1696 @@
+--- START OF FILE code (19).html ---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shift Scheduler</title>
+  <style>
+    /* Basic Reset and Dark Mode Base */
+    * {
+        box-sizing: border-box; /* Helps with padding/border calculations */
+    }
+
+    body{
+        font-family:Arial,sans-serif;
+        background-color:#1e1e1e; /* Dark background */
+        color:#e0e0e0; /* Light text */
+        margin:0; /* Remove default body margin */
+        padding:20px; /* Add padding instead */
+        line-height: 1.6; /* Improved readability */
+    }
+
+    .container{
+        display:flex;
+        gap:30px;
+        margin-top: 20px; /* Space below header/top-bar */
+        flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    }
+
+    .controls{
+        flex:1;
+        max-width:300px; /* Increased max width slightly */
+        background-color: #282c34; /* Slightly different dark shade */
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .controls h3 {
+        margin-top: 0;
+        color: #61afef; /* Accent color for heading */
+        border-bottom: 1px solid #555;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+
+    .schedule{
+        flex:3;
+        overflow-x:auto; /* Keep horizontal scrolling */
+        background-color: #282c34; /* Match controls background */
+        padding: 15px; /* Add padding around the table */
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    table{
+        border-collapse:collapse;
+        width:100%;
+        min-width: 600px; /* Ensure table has a minimum width */
+    }
+
+    th,td{
+        border:1px solid #555; /* Darker border */
+        padding:8px 6px; /* Slightly more padding */
+        text-align:center;
+        white-space:nowrap;
+        color: #e0e0e0; /* Default text color */
+    }
+
+    th{
+        background-color:#3a4048; /* Dark header background */
+        color:white;
+        position:sticky;
+        top:0;
+        z-index: 10;
+        font-weight: bold;
+         text-transform: uppercase; /* Optional: uppercase header text */
+         font-size: 12px;
+    }
+
+    .name-cell {
+        position: sticky;
+        left: 0;
+        background-color: #333; /* Darker shade for sticky name column */
+        z-index: 5;
+        font-weight: bold;
+        text-align: left; /* Align name left */
+        padding-left: 15px;
+        color: #c678dd; /* Accent color for names */
+    }
+
+    th:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 15;
+        background-color: #3a4048; /* Match header background */
+        color: white;
+    }
+
+    /* Colorful Shift Classes (Vibrant colors) */
+    .day{background-color:#98c379; color: #ffffff;} /* Green, Dark Text */
+    .night{background-color:#61afef; color: #ffffff;} /* Blue, Dark Text */
+    .reliever-day{background-color:#56b6c2; color: #ffffff;} /* Cyan/Teal, Dark Text */
+    .reliever-night{background-color:#c678dd; color: #ffffff;} /* Purple, Dark Text */
+    .off{background-color:#e06c75; color: #ffffff;} /* Red, Dark Text */
+
+    /* Hover effect for editable cells */
+    .editable{
+        cursor:pointer;
+        transition: background-color 0.2s ease; /* Smooth transition */
+    }
+    .editable:hover {
+        background-color: rgba(224, 224, 224, 0.1); /* Subtle white overlay on hover */
+    }
+
+
+    .top-bar{
+        margin-bottom:10px;
+        display:flex;
+        align-items:center;
+        gap:20px;
+        flex-wrap: wrap; /* Allow wrapping */
+        padding: 15px;
+        background-color: #282c34; /* Match container background */
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .top-bar label {
+         color: #abb2bf; /* Slightly muted label color */
+         font-weight: bold;
+    }
+    .top-bar select, .top-bar button {
+         padding: 8px 15px; /* More padding for buttons/selects */
+         cursor: pointer;
+         border-radius: 4px;
+         font-size: 14px;
+         transition: background-color 0.2s ease, opacity 0.2s ease;
+         border: 1px solid #555;
+         background-color: #3a4048; /* Darker input background */
+         color: #e0e0e0; /* Light text */
+    }
+     .top-bar select:focus, .top-bar button:focus,
+     input[type="text"].name-edit:focus, select:focus {
+        outline: 2px solid #61afef; /* Accent color outline on focus */
+        border-color: #61afef;
+     }
+
+    .top-bar button {
+        background-color: #444; /* Default button background */
+        color: #e0e0e0;
+        border: 1px solid #555;
+    }
+    .top-bar button:hover {
+        background-color: #555;
+        opacity: 0.9;
+    }
+    /* Style for the Update button */
+    .top-bar button:nth-of-type(1) { /* Target the first button */
+        background-color: #61afef; /* Accent color for update */
+        color: #1e1e1e; /* Dark text on accent */
+        border-color: #61afef;
+        font-weight: bold;
+    }
+     .top-bar button:nth-of-type(1):hover {
+         background-color: #56b6c2; /* Slightly different accent on hover */
+     }
+
+
+    h1{
+        text-align:center;
+        margin:0 0 5px 0; /* Add some margin below h1 */
+        color: #e0e0e0; /* Light color for main title */
+         font-size: 28px;
+    }
+     h2{
+         text-align:center;
+         margin:0;
+         color: #abb2bf; /* Muted color for subtitle */
+         font-size: 18px;
+         font-weight: normal;
+     }
+
+    .header{
+        margin-bottom:0; /* Removed bottom margin as container has top margin */
+        padding: 15px 20px 10px 20px; /* Padding around header */
+        background-color: #282c34; /* Match container background */
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .omv-header-cell{
+        text-align:center;
+        font-weight:bold;
+        background-color:#444; /* Slightly darker background for OMV header */
+        padding:8px;
+        border-top: 1px solid #555; /* Match border color */
+        color: #e0ee; /* Light color */
+         text-transform: uppercase;
+         font-size: 12px;
+    }
+
+    .dropdown-cell{
+        padding:2px;
+        min-width:150px; /* Increased min-width */
+        width:180px; /* Increased width */
+    }
+    /* Style for select within dropdown-cell */
+    .dropdown-cell select{
+        width:100%;
+        padding:6px; /* Adjusted padding */
+        border:1px solid #555; /* Dark border */
+        border-radius:4px;
+        background-color:#3a4048; /* Dark background */
+        color:#e0e0e0; /* Light text */
+        -webkit-appearance: none; /* Remove default arrow */
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%23e0e0e0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>'); /* Custom arrow */
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 12px;
+        padding-right: 30px; /* Make space for arrow */
+    }
+     .dropdown-cell select:focus {
+         outline: 2px solid #61afef;
+         border-color: #61afef;
+     }
+
+
+    input.name-edit{
+        width: calc(100% - 8px); /* Fill parent, account for padding */
+        padding:4px 6px; /* Adjusted padding */
+        font-size:14px;
+        border:1px solid #555; /* Dark border */
+        border-radius:4px;
+        background-color:#3a4048; /* Dark background */
+        color:#e0e0e0; /* Light text */
+    }
+     input.name-edit:focus {
+         outline: 2px solid #61afef;
+         border-color: #61afef;
+     }
+
+
+    .omv-select-group{
+        margin-top:15px;
+         padding-top: 15px;
+         border-top: 1px solid #555; /* Separator line */
+    }
+    .omv-select-group p{
+        font-weight:bold;
+        margin-top:0;
+        margin-bottom:10px; /* More space below title */
+         color: #61afef; /* Accent color */
+    }
+    .omv-select-group label{
+        display:flex; /* Use flex for label and select alignment */
+        margin-bottom:8px; /* Space between labels */
+        align-items: center;
+         color: #abb2bf; /* Muted label color */
+    }
+    .omv-select-group label select {
+        flex-grow: 1; /* Allow select to fill space */
+        margin-left: 10px; /* Space between label text and select */
+         padding: 6px; /* Match other selects */
+         border:1px solid #555; /* Dark border */
+        border-radius:4px;
+        background-color:#3a4048; /* Dark background */
+        color:#e0e0e0; /* Light text */
+        -webkit-appearance: none; /* Remove default arrow */
+        -moz-appearance: none;
+        appearance: none;
+         background-image: url('data:image/svg+xml;utf8,<svg fill="%23e0e0e0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>'); /* Custom arrow */
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 12px;
+        padding-right: 30px; /* Make space for arrow */
+    }
+     .omv-select-group label select:focus {
+         outline: 2px solid #61afef;
+         border-color: #61afef;
+     }
+
+
+    .separator-cell {
+        height: 20px; /* Space */
+        background-color: transparent;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        border-top: 1px solid #555; /* Match border color */
+        padding: 0;
+    }
+
+    .signature-section {
+        margin-top: 20px; /* More space above signatures */
+        padding: 20px; /* More padding */
+        border-top: 1px solid #555; /* Match border color */
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px; /* More space between signature items */
+        align-items: flex-start;
+        justify-content: space-around;
+        background-color: #282c34; /* Match container background */
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .signature-item {
+        min-width: 220px; /* Increased min-width */
+        flex-grow: 1;
+         flex-basis: 220px; /* Increased base width */
+    }
+     .signature-item p {
+         margin: 0 0 8px 0; /* More space below label */
+         font-size: 15px; /* Slightly larger font */
+         line-height: 1.4; /* Better line height */
+         color: #abb2bf; /* Muted label color */
+         font-weight: bold;
+     }
+    .signature-line {
+        display: block;
+        width: 100%;
+        border-bottom: 1px solid #e0e0e0; /* Light line on dark background */
+        height: 25px; /* More space for signature */
+        box-sizing: border-box;
+    }
+
+     /* CSS for Count Rows */
+    .count-row td {
+        font-weight: bold;
+        background-color: #3a4048; /* Dark header background */
+        border-top: 2px solid #61afef; /* Accent color border top */
+        padding: 8px 6px;
+        text-align: center; /* Center numbers */
+    }
+    .day-count-row td { color: #98c379; } /* Green text for Day count */
+    .night-count-row td { color: #61afef; } /* Blue text for Night count */
+    .off-count-row td { color: #e06c75; } /* Red text for Off count */
+
+    /* Special style for the first cell in count rows (the label) */
+    .count-row td:first-child {
+        text-align: left; /* Align label left */
+        padding-left: 15px;
+        background-color: #333; /* Match name column background */
+        color: #abb2bf; /* Muted label color */
+        border-top: 2px solid #555; /* Match column border top */
+    }
+     .day-count-row td:first-child { border-top-color: #98c379; } /* Label border color matches count color */
+     .night-count-row td:first-child { border-top-color: #61afef; }
+     .off-count-row td:first-child { border-top-color: #e06c75; }
+
+
+     /* --- Print Styles --- */
+     @media print {
+        body { margin: 0; padding: 0; background-color: white; color: #000; font-size: 10px; }
+        .container { display: block; margin-top: 10px; }
+        .controls { display: none; }
+        .top-bar { display: none; }
+        .header { display: block; padding: 10px 20px 5px 20px; margin-bottom: 0; background-color: white; color: #000; border-radius: 0; box-shadow: none; border-bottom: 1px solid #000;} /* Ensure header is visible and styled for print */
+         .header h1 { font-size: 18px; color: #000; margin-bottom: 2px; }
+         .header h2 { font-size: 12px; color: #555; }
+
+        .schedule { overflow-x: visible !important; flex: none; width: auto; margin-top: 5px; padding: 5px; background-color: white; border-radius: 0; box-shadow: none;} /* Allow table to take full width, no flex, add margin */
+        table { width: 100%; border-collapse: collapse; margin: 0 auto; } /* Auto width, collapse borders, center table */
+        th, td { border: 1px solid #000; padding: 3px 5px; font-size: 9px; white-space: nowrap; color: #000; }
+
+         .name-cell, th:first-child { position: static !important; left: auto !important; background-color: white !important; z-index: auto !important; font-size: 9px; padding-left: 5px; } /* Remove sticky */
+         th { background-color: #eee !important; color: #000 !important; position: static !important; top: auto !important; z-index: auto !important; font-size: 9px; text-transform: none;} /* Print header styles */
+
+          /* Force colors to print */
+          .day{background-color:#c8facc !important; color:#000 !important; -webkit-print-color-adjust: exact; color-adjust: exact;}
+          .night{background-color:#d1d1ff !important; color:#000 !important; -webkit-print-color-adjust: exact; color-adjust: exact;}
+          .reliever-day{background-color:#c6f0ff !important; color:#000 !important; -webkit-print-color-adjust: exact; color-adjust: exact;}
+          .reliever-night{background-color:#e1c6ff !important; color:#000 !important; -webkit-print-color-adjust: exact; color-adjust: exact;}
+          .off{background-color:#ffe1e1 !important; color:#000 !important; -webkit-print-color-adjust: exact; color-adjust: exact;}
+
+           .omv-header-cell{background-color:#ddd !important; color:#000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; border-top: 1px solid #000 !important; font-size: 9px; text-transform: none;}
+            .separator-cell { height: 10px; border-top: 1px solid #000 !important; background-color: transparent !important; }
+
+            /* Print styles for Count Rows */
+             .count-row td {
+                background-color: #eee !important;
+                 -webkit-print-color-adjust: exact; color-adjust: exact;
+                border-top: 1px solid #000 !important; /* Stronger border top */
+                padding: 3px 5px !important;
+                 font-size: 9px !important;
+                 font-weight: bold;
+                 color: #000 !important; /* Force black text */
+            }
+             .count-row td:first-child {
+                 background-color: white !important; /* White background for label */
+                 border-top-color: #000 !important; /* Black border */
+                 padding-left: 5px !important;
+             }
+
+
+         .signature-section {
+            margin-top: 10px;
+            padding: 10px;
+             border-top: 1px solid #000;
+             display: flex;
+             flex-wrap: wrap;
+             gap: 20px; /* Reduced gap for print */
+             justify-content: space-between;
+             background-color: white; /* White background for print */
+             border-radius: 0;
+             box-shadow: none;
+        }
+         .signature-item {
+             min-width: 120px; /* Reduced min-width for print */
+             flex-basis: 120px; /* Reduced base width for print */
+         }
+          .signature-item p {
+             font-size: 9px;
+              margin-bottom: 3px;
+              color: #000; /* Black text */
+          }
+         .signature-line {
+             width: 100%;
+             height: 15px;
+              border-bottom: 1px solid #000 !important;
+              -webkit-print-color-adjust: exact; color-adjust: exact;
+         }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div id="loginScreen" style="text-align:center; padding:100px;">
+  <h2>Enter Admin Password</h2>
+  <input type="password" id="adminPassword" placeholder="Password" style="padding:8px; font-size:16px;" />
+  <br><br>
+  <button onclick="checkPassword()" style="padding:10px 20px; font-size:16px;">Login</button>
+  <p id="errorMsg" style="color:red;"></p>
+</div>
+<div id="mainContent" style="display:none;">
+
+  <div class="header">
+    <h1>Boys Hostel Yoga Management Attendance Sheet</h1>
+    <h2 id="titleDate">Shift Scheduler (21st to 20th)</h2>
+  </div>
+  <div class="top-bar">
+    <label for="month">Month:</label>
+    <select id="month">
+      <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+      <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+      <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+      <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+    </select>
+    <label for="year">Year:</label>
+    <select id="year">
+       <!-- Options will be added by JS or default -->
+      <option value="2024">2024</option>
+      <option value="2025" selected>2025</option>
+      <option value="2026">2026</option>
+    </select>
+    <button onclick="renderSchedule()">Update</button>
+    <button onclick="saveSchedule()">Save Schedule</button>
+    <button onclick="loadSchedule()">Load Saved Schedule</button>
+    <button onclick="downloadPDF()">Download PDF</button>
+  </div>
+  <div class="container">
+    <div class="controls">
+      <h3>Assign Shifts & OMV</h3>
+      <div id="controls"></div>
+    </div>
+    <div class="schedule">
+      <table id="scheduleTable">
+        <thead><tr><th>Name</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+    <div class="signature-section">
+        <div class="signature-item">
+            <p><strong>Prepared by:</strong></p>
+            <div class="signature-line"></div>
+        </div>
+        <div class="signature-item">
+             <p><strong>Filled by:</strong></p>
+             <div class="signature-line"></div>
+        </div>
+         <div class="signature-item">
+            <p><strong>Checked by (Manager):</strong></p>
+            <div class="signature-line"></div>
+        </div>
+        <div class="signature-item">
+            <p><strong>Checked by (General Manager):</strong></p>
+            <div class="signature-line"></div>
+        </div>
+         <div class="signature-item">
+            <p><strong>Approved by (Managing Director):</strong></p>
+            <div class="signature-line"></div>
+        </div>
+    </div>
+
+  <script>
+    let originalNames=["Franklin","Vijay","Vettri","Mohan","Madan","Saravanan","Manikandan","Ganesan","Antony"];
+    let names=[...originalNames];
+    let omvAssignment1 = originalNames.includes("Ganesan") ? "Ganesan" : originalNames[originalNames.length > 1 ? originalNames.length - 2 : 0] || "";
+    let omvAssignment2 = originalNames.includes("Antony") ? "Antony" : originalNames[originalNames.length > 0 ? originalNames.length - 1 : 0] || "";
+    let shiftAssignments = {};
+
+    function loadSchedule() {
+        const savedData = localStorage.getItem('shiftScheduleData');
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                if (data.names && Array.isArray(data.names)) {
+                   names = data.names.filter(name => name.trim() !== '');
+                }
+
+                 names.forEach(name => {
+                    if (!shiftAssignments[name]) {
+                        shiftAssignments[name] = { type: "night", schedule: {} };
+                    }
+                 });
+
+                if (data.shiftAssignments && typeof data.shiftAssignments === 'object') {
+                    for (const name in data.shiftAssignments) {
+                         if (names.includes(name)) {
+                            if (!shiftAssignments[name]) shiftAssignments[name] = { type: "night", schedule: {} };
+                            if (data.shiftAssignments[name].type !== undefined) {
+                                shiftAssignments[name].type = data.shiftAssignments[name].type;
+                            }
+                            if (data.shiftAssignments[name].schedule !== undefined) {
+                                const validSchedule = {};
+                                for (const dayIndex in data.shiftAssignments[name].schedule) {
+                                    const shiftState = data.shiftAssignments[name].schedule[dayIndex];
+                                     // Validate saved shift state
+                                     if (['Day', 'Night', 'Off'].includes(shiftState) && !isNaN(parseInt(dayIndex))) {
+                                         validSchedule[dayIndex] = shiftState;
+                                     } else {
+                                         console.warn(`Discarding invalid saved schedule entry for ${name} on day ${dayIndex}: ${shiftState}`);
+                                     }
+                                }
+                                shiftAssignments[name].schedule = validSchedule;
+                            }
+                         } else {
+                              console.warn(`Discarding shiftAssignments entry for name not found in loaded names list: ${name}`);
+                         }
+                    }
+                     for (const name in shiftAssignments) {
+                        if (!names.includes(name)) {
+                             delete shiftAssignments[name];
+                             console.warn(`Removed shiftAssignments entry for deleted name during load: ${name}`);
+                        }
+                     }
+                } else {
+                     console.warn("No or invalid shiftAssignments data found in Local Storage. Using defaults.");
+                      names.forEach(name => {
+                        if (!shiftAssignments[name]) {
+                             const originalIndex = originalNames.indexOf(name);
+                             let defaultType = "night";
+                             if (originalIndex !== -1) {
+                                // Default assignment based on original index
+                                if (originalIndex >= 0 && originalIndex < 3) { defaultType = "day"; }
+                                else if (originalIndex >= 3 && originalIndex < 6) { defaultType = "night"; }
+                                else if (originalIndex === originalNames.length - 1) { defaultType = "reliever"; } // Assuming last original name is reliever
+                             }
+                             shiftAssignments[name] = { type: defaultType, schedule: {} };
+                             console.warn(`Initialized missing shiftAssignments for loaded name (after invalid data): ${name}`);
+                        }
+                     });
+                }
+
+                omvAssignment1 = (data.omvAssignment1 !== undefined && names.includes(data.omvAssignment1)) ? data.omvAssignment1 : "";
+                omvAssignment2 = (data.omvAssignment2 !== undefined && names.includes(data.omvAssignment2)) ? data.omvAssignment2 : "";
+
+                const monthSelect = document.getElementById('month');
+                const yearSelect = document.getElementById('year');
+                if (data.selectedMonth !== undefined && monthSelect.querySelector(`option[value="${data.selectedMonth}"]`)) {
+                    monthSelect.value = data.selectedMonth;
+                }
+                 if (data.selectedYear !== undefined) {
+                    if (!yearSelect.querySelector(`option[value="${data.selectedYear}"]`)) {
+                         const option = document.createElement('option');
+                         option.value = data.selectedYear;
+                         option.textContent = data.selectedYear;
+                          yearSelect.appendChild(option);
+                           // Re-sort options after adding a new one
+                           Array.from(yearSelect.options)
+                                 .sort((a, b) => parseInt(a.value) - parseInt(b.value))
+                                 .forEach(option => yearSelect.add(option));
+                     }
+                    yearSelect.value = data.selectedYear;
+                 }
+
+                console.log("Schedule loaded from Local Storage.", {names, shiftAssignments, omvAssignment1, omvAssignment2, selectedMonth: data.selectedMonth, selectedYear: data.selectedYear});
+
+                renderSchedule();
+                return true;
+            } catch (e) {
+                console.error("Failed to parse schedule data from Local Storage:", e);
+                alert("Error loading schedule data. Data might be corrupt. Loading default data.");
+                // Reset to default state on load error
+                names = [...originalNames];
+                 shiftAssignments = {};
+                 originalNames.forEach((name, index) => {
+                     let defaultType = "night";
+                     if (index >= 0 && index < 3) { defaultType = "day"; }
+                     else if (index >= 3 && index < 6) { defaultType = "night"; }
+                     else if (index === originalNames.length - 1) { defaultType = "reliever"; }
+                     shiftAssignments[name] = { type: defaultType, schedule: {} };
+                 });
+                 omvAssignment1 = originalNames.includes("Ganesan") ? "Ganesan" : originalNames[originalNames.length > 1 ? originalNames.length - 2 : 0] || "";
+                 omvAssignment2 = originalNames.includes("Antony") ? "Antony" : originalNames[originalNames.length > 0 ? originalNames.length - 1 : 0] || "";
+
+                 const today = new Date();
+                 const currentYear = today.getFullYear();
+                 document.getElementById("month").value = today.getMonth();
+                 document.getElementById("year").value = currentYear;
+
+                 renderSchedule();
+                return false;
+            }
+        }
+        console.log("No saved schedule data found in Local Storage.");
+        return false;
+    }
+
+    function saveSchedule() {
+        const selectedMonth = document.getElementById('month').value;
+        const selectedYear = document.getElementById('year').value;
+         // Clean up empty schedule objects for names that might not have overrides saved yet
+        const cleanedShiftAssignments = {};
+        for(const name in shiftAssignments) {
+             if (names.includes(name)) { // Only save for existing names
+                 cleanedShiftAssignments[name] = {
+                     type: shiftAssignments[name].type,
+                     schedule: Object.keys(shiftAssignments[name].schedule).length > 0 ? shiftAssignments[name].schedule : {} // Only save schedule if it's not empty
+                 };
+             }
+        }
+
+        const dataToSave = {
+            names: names,
+            shiftAssignments: cleanedShiftAssignments,
+            omvAssignment1: omvAssignment1,
+            omvAssignment2: omvAssignment2,
+            selectedMonth: selectedMonth,
+            selectedYear: selectedYear
+        };
+        try {
+            localStorage.setItem('shiftScheduleData', JSON.stringify(dataToSave));
+            console.log("Schedule saved to Local Storage.");
+            alert("Schedule saved successfully!");
+        } catch (e) {
+            console.error("Failed to save schedule data to Local Storage:", e);
+            alert("Error saving schedule data. Local Storage might be full or unavailable.");
+        }
+    }
+
+    // --- PDF Download Function ---
+    // Captures the header, schedule table, and signatures as images and adds them to a landscape A4 PDF.
+    function downloadPDF() {
+        const body = document.body;
+        const headerDiv = document.querySelector('.header'); // Get the header div
+        const topBar = document.querySelector('.top-bar'); // Get top bar (to hide)
+        const controls = document.querySelector('.controls'); // Get controls (to hide)
+        const scheduleDiv = document.querySelector('.schedule'); // Get schedule div (contains table)
+        const bottomSigsDiv = document.querySelector('.signature-section'); // Get signature section
+
+         // Store original styles and display states
+         const originalBodyMargin = body.style.margin;
+         const originalBodyPadding = body.style.padding;
+         const originalBodyBg = body.style.backgroundColor;
+         const originalBodyColor = body.style.color;
+         const originalHeaderDisplay = headerDiv ? window.getComputedStyle(headerDiv).display : '';
+         const originalHeaderStyles = headerDiv ? { // Capture header specific styles
+             padding: headerDiv.style.padding,
+             marginBottom: headerDiv.style.marginBottom,
+             backgroundColor: headerDiv.style.backgroundColor,
+             borderRadius: headerDiv.style.borderRadius,
+             boxShadow: headerDiv.style.boxShadow,
+             borderBottom: headerDiv.style.borderBottom
+         } : null;
+         const originalHeaderH1Styles = headerDiv ? { color: headerDiv.querySelector('h1').style.color, fontSize: headerDiv.querySelector('h1').style.fontSize, marginBottom: headerDiv.querySelector('h1').style.marginBottom } : null;
+         const originalHeaderH2Styles = headerDiv ? { color: headerDiv.querySelector('h2').style.color, fontSize: headerDiv.querySelector('h2').style.fontSize, fontWeight: headerDiv.querySelector('h2').style.fontWeight } : null;
+
+
+         const originalTopBarDisplay = topBar ? topBar.style.display : '';
+         const originalControlsDisplay = controls ? controls.style.display : '';
+         const originalScheduleOverflow = scheduleDiv ? scheduleDiv.style.overflowX : '';
+         const originalScheduleFlex = scheduleDiv ? scheduleDiv.style.flex : '';
+         const originalScheduleWidth = scheduleDiv ? scheduleDiv.style.width : '';
+         const originalScheduleDisplay = scheduleDiv ? window.getComputedStyle(scheduleDiv).display : ''; // Capture original schedule display
+          const originalScheduleStyles = scheduleDiv ? {
+              marginTop: scheduleDiv.style.marginTop,
+              padding: scheduleDiv.style.padding,
+              backgroundColor: scheduleDiv.style.backgroundColor,
+              borderRadius: scheduleDiv.style.borderRadius,
+              boxShadow: scheduleDiv.style.boxShadow,
+          } : null;
+
+         const originalBottomSigsDisplay = bottomSigsDiv ? window.getComputedStyle(bottomSigsDiv).display : ''; // Capture original signature display
+          const originalBottomSigsStyles = bottomSigsDiv ? {
+             marginTop: bottomSigsDiv.style.marginTop,
+             padding: bottomSigsDiv.style.padding,
+             borderTop: bottomSigsDiv.style.borderTop,
+             gap: bottomSigsDiv.style.gap,
+             backgroundColor: bottomSigsDiv.style.backgroundColor,
+             borderRadius: bottomSigsDiv.style.borderRadius,
+             boxShadow: bottomSigsDiv.style.boxShadow,
+          } : null;
+
+
+         // Store original table/cell styles (sticky, borders, colors, background)
+         const scheduleTable = document.getElementById('scheduleTable');
+         const allCellsAndHeaders = scheduleTable ? scheduleTable.querySelectorAll('th, td') : [];
+         const originalCellStyles = [];
+         allCellsAndHeaders.forEach(cell => {
+             const originalStyle = {};
+             originalStyle.element = cell;
+             originalStyle.position = cell.style.position;
+             originalStyle.left = cell.style.left;
+             originalStyle.top = cell.style.top;
+             originalStyle.zIndex = cell.style.zIndex;
+             originalStyle.backgroundColor = cell.style.backgroundColor;
+             originalStyle.color = cell.style.color;
+             originalStyle.border = cell.style.border; // Capture full border style
+             originalStyle.padding = cell.style.padding;
+             originalStyle.fontSize = cell.style.fontSize;
+             originalCellStyles.push(originalStyle);
+
+             // Apply temporary print-like styles
+             cell.style.position = 'static';
+             cell.style.left = 'auto';
+             cell.style.top = 'auto';
+             cell.style.zIndex = 'auto';
+             cell.style.border = '1px solid #000'; // Black border for print
+             cell.style.padding = '3px 5px'; // Reduced padding for print
+             cell.style.fontSize = '9px'; // Reduced font size for print
+
+             // Specific background/color overrides for print
+             if (cell.classList.contains('name-cell')) {
+                  cell.style.backgroundColor = 'white';
+                  cell.style.color = '#000';
+                  cell.style.paddingLeft = '5px';
+             } else if (cell.tagName === 'TH') { // Header row
+                  cell.style.backgroundColor = '#eee';
+                  cell.style.color = '#000';
+                  cell.style.textTransform = 'none';
+             } else if (cell.classList.contains('omv-header-cell')) { // OMV header cell
+                 cell.style.backgroundColor = '#ddd';
+                 cell.style.color = '#000';
+                  cell.style.textTransform = 'none';
+             } else if (cell.classList.contains('count-row')) { // Count row cells
+                 cell.style.backgroundColor = '#eee';
+                 cell.style.color = '#000';
+             } else { // Regular shift cells (Day, Night, Off, Reliever) - handled by existing print media query classes
+                 // Ensure their color is black on print for readability
+                 cell.style.color = '#000';
+             }
+         });
+
+
+         // Restore styles helper function
+         const restoreStyles = () => {
+             body.style.margin = originalBodyMargin;
+             body.style.padding = originalBodyPadding;
+             body.style.backgroundColor = originalBodyBg;
+             body.style.color = originalBodyColor;
+
+             if (headerDiv && originalHeaderStyles) {
+                 headerDiv.style.display = originalHeaderDisplay;
+                 Object.assign(headerDiv.style, originalHeaderStyles);
+                 if (originalHeaderH1Styles) Object.assign(headerDiv.querySelector('h1').style, originalHeaderH1Styles);
+                 if (originalHeaderH2Styles) Object.assign(headerDiv.querySelector('h2').style, originalHeaderH2Styles);
+             }
+             if (topBar) topBar.style.display = originalTopBarDisplay;
+             if (controls) controls.style.display = originalControlsDisplay;
+             if (scheduleDiv && originalScheduleStyles) {
+                 scheduleDiv.style.display = originalScheduleDisplay;
+                 scheduleDiv.style.overflowX = originalScheduleOverflow;
+                 scheduleDiv.style.flex = originalScheduleFlex;
+                 scheduleDiv.style.width = originalScheduleWidth;
+                  Object.assign(scheduleDiv.style, originalScheduleStyles);
+             }
+             if (bottomSigsDiv && originalBottomSigsStyles) {
+                 bottomSigsDiv.style.display = originalBottomSigsDisplay;
+                 Object.assign(bottomSigsDiv.style, originalBottomSigsStyles);
+             }
+
+             originalCellStyles.forEach(item => {
+                 item.element.style.position = item.position;
+                 item.element.style.left = item.left;
+                 item.element.style.top = item.top;
+                 item.element.style.zIndex = item.zIndex;
+                 item.element.style.backgroundColor = item.backgroundColor;
+                 item.element.style.color = item.color;
+                 item.element.style.border = item.border; // Restore original border style
+                 item.element.style.padding = item.padding;
+                 item.element.style.fontSize = item.fontSize;
+                  // Restore specific padding if it was applied
+                  if (item.element.classList.contains('name-cell')) {
+                       item.element.style.paddingLeft = '15px'; // Or whatever the original was
+                   }
+             });
+         };
+
+         // Apply base print body styles (rest of print styles are in @media query)
+         body.style.margin = '0';
+         body.style.padding = '0';
+         body.style.backgroundColor = 'white';
+         body.style.color = '#000';
+
+
+         // Hide controls, top bar, and potentially schedule/signatures temporarily for capture
+         if (topBar) topBar.style.display = 'none'; // Hide top bar
+         if (controls) controls.style.display = 'none'; // Hide controls
+         if (scheduleDiv) scheduleDiv.style.display = 'none'; // Hide schedule div
+         if (bottomSigsDiv) bottomSigsDiv.style.display = 'none'; // Hide signatures div
+
+         // Ensure the header is visible for capture
+         if (headerDiv) {
+              headerDiv.style.display = 'block';
+              // Apply print-like styles to header for capture
+              headerDiv.style.padding = '10px 20px 5px 20px';
+              headerDiv.style.marginBottom = '0';
+              headerDiv.style.backgroundColor = 'white';
+              headerDiv.style.color = '#000';
+              headerDiv.style.borderRadius = '0';
+              headerDiv.style.boxShadow = 'none';
+              headerDiv.style.borderBottom = '1px solid #000';
+              if (headerDiv.querySelector('h1')) {
+                   headerDiv.querySelector('h1').style.fontSize = '18px';
+                   headerDiv.querySelector('h1').style.color = '#000';
+                   headerDiv.querySelector('h1').style.marginBottom = '2px';
+              }
+               if (headerDiv.querySelector('h2')) {
+                   headerDiv.querySelector('h2').style.fontSize = '12px';
+                   headerDiv.querySelector('h2').style.color = '#555'; // Use a grey for subtitle
+                   headerDiv.querySelector('h2').style.fontWeight = 'normal';
+               }
+         }
+
+
+         let headerCanvas, scheduleCanvas, bottomSigsCanvas;
+
+         // Use a slight delay to ensure style changes are applied before capture
+         setTimeout(async () => { // Use async/await for clearer sequence
+
+             try {
+                 // 1. Capture Header
+                  if (headerDiv) {
+                     headerCanvas = await html2canvas(headerDiv, {
+                         scale: 3, // Increased scale for better quality
+                         logging: false,
+                         useCORS: true,
+                          // Ignore other elements during header capture
+                         ignoreElements: (element) => {
+                             return element === scheduleDiv || element === bottomSigsDiv || element === topBar || element === controls || element.tagName === 'TABLE'; // Also ignore table inside scheduleDiv if scheduleDiv is visible
+                         },
+                         backgroundColor: 'white' // Ensure white background for header capture
+                     });
+                      if (!headerCanvas) console.warn("Failed to capture header.");
+                  } else {
+                      console.warn("Header div not found.");
+                  }
+
+
+                  // Prepare for schedule capture: show schedule, hide others
+                  if (headerDiv) headerDiv.style.display = 'none'; // Hide header after capture
+                  if (scheduleDiv) {
+                      scheduleDiv.style.display = 'block'; // Show schedule div
+                      scheduleDiv.style.overflowX = 'visible'; // Allow table to take full width
+                      scheduleDiv.style.flex = 'none'; // Remove flex property
+                      scheduleDiv.style.width = 'auto'; // Allow auto width
+                       // Apply print-like styles to schedule container
+                       scheduleDiv.style.marginTop = '5px';
+                       scheduleDiv.style.padding = '5px';
+                       scheduleDiv.style.backgroundColor = 'white';
+                       scheduleDiv.style.borderRadius = '0';
+                       scheduleDiv.style.boxShadow = 'none';
+                  }
+                   if (bottomSigsDiv) bottomSigsDiv.style.display = 'none'; // Ensure signatures are hidden
+
+                  // Add a very slight delay just in case styles need to settle
+                  await new Promise(resolve => setTimeout(resolve, 50));
+
+
+                 // 2. Capture Schedule Table (inside scheduleDiv)
+                 // html2canvas will capture the *content* of scheduleDiv, which is the table.
+                 if (scheduleDiv) {
+                     scheduleCanvas = await html2canvas(scheduleDiv, {
+                         scale: 3, // Increased scale for better quality
+                         logging: false,
+                         useCORS: true,
+                          // Ignore other elements during schedule capture
+                         ignoreElements: (element) => {
+                            return element === headerDiv || element === bottomSigsDiv || element === topBar || element === controls;
+                         },
+                          backgroundColor: 'white' // Ensure white background for schedule capture
+                     });
+                     if (!scheduleCanvas) console.warn("Failed to capture schedule.");
+                 } else {
+                      console.warn("Schedule div not found.");
+                 }
+
+
+                  // Prepare for signature capture: show signatures, hide others
+                   if (headerDiv) headerDiv.style.display = 'none';
+                  if (scheduleDiv) scheduleDiv.style.display = 'none';
+                  if (bottomSigsDiv) {
+                      bottomSigsDiv.style.display = 'flex'; // Show bottom sigs (restore original display mode)
+                       // Apply print-like styles to signatures container
+                       bottomSigsDiv.style.marginTop = '10px';
+                       bottomSigsDiv.style.padding = '10px';
+                       bottomSigsDiv.style.borderTop = '1px solid #000';
+                       bottomSigsDiv.style.gap = '20px';
+                       bottomSigsDiv.style.backgroundColor = 'white';
+                       bottomSigsDiv.style.borderRadius = '0';
+                       bottomSigsDiv.style.boxShadow = 'none';
+                       // Apply print-like styles to signature items/lines
+                       bottomSigsDiv.querySelectorAll('.signature-item').forEach(item => {
+                           item.style.minWidth = '120px';
+                           item.style.flexBasis = '120px';
+                       });
+                        bottomSigsDiv.querySelectorAll('.signature-item p').forEach(p => {
+                            p.style.fontSize = '9px';
+                            p.style.marginBottom = '3px';
+                            p.style.color = '#000';
+                        });
+                         bottomSigsDiv.querySelectorAll('.signature-line').forEach(line => {
+                             line.style.height = '15px';
+                             line.style.borderBottom = '1px solid #000';
+                         });
+                  }
+
+
+                  // Add a very slight delay just in case styles need to settle
+                  await new Promise(resolve => setTimeout(resolve, 50));
+
+                 // 3. Capture Bottom Signatures
+                 if (bottomSigsDiv) {
+                      bottomSigsCanvas = await html2canvas(bottomSigsDiv, {
+                           scale: 3, // Increased scale for better quality
+                           logging: false,
+                           useCORS: true,
+                           ignoreElements: (element) => {
+                              return element === headerDiv || element === scheduleDiv || element === topBar || element === controls;
+                           },
+                            backgroundColor: 'white' // Ensure white background for signature capture
+                       });
+                       if (!bottomSigsCanvas) console.warn("Failed to capture signatures.");
+                   } else {
+                        console.warn("Signature section not found.");
+                   }
+
+
+                 // --- PDF Generation ---
+                 // Restore original styles immediately after all captures are complete
+                 restoreStyles();
+
+                // Calculate PDF dimensions and image dimensions
+                const pdf = new jspdf.jsPDF('l', 'mm', 'a4'); // landscape, mm, a4
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                const margin = 10; // 10mm margin
+                const usableWidth = pdfWidth - (2 * margin);
+                const usableHeight = pdfHeight - (2 * margin);
+                let currentPosY = margin; // Start positioning below the top margin
+
+
+                // Add Header Image
+                if (headerCanvas) {
+                    const headerAspectRatio = headerCanvas.width / headerCanvas.height;
+                    let headerImgWidth = usableWidth; // Start by assuming it fits the full width
+                    let headerImgHeight = usableWidth / headerAspectRatio;
+
+                     // Constraint header height to a max percentage of page height
+                     const maxHeaderHeightPercent = 0.2; // e.g., 20%
+                     const maxHeaderHeight = usableHeight * maxHeaderHeightPercent;
+
+                     if (headerImgHeight > maxHeaderHeight) {
+                         headerImgHeight = maxHeaderHeight;
+                         headerImgWidth = headerImgHeight * headerAspectRatio;
+                          // Ensure width doesn't exceed usable width after scaling by height
+                          if (headerImgWidth > usableWidth) {
+                             headerImgWidth = usableWidth;
+                              headerImgHeight = usableWidth / headerAspectRatio;
+                          }
+                     }
+                     // Ensure height is at least 1mm
+                     if (headerImgHeight <= 0) headerImgHeight = 1;
+
+                    const headerImgData = headerCanvas.toDataURL('image/png');
+                    // Add the header image, centered horizontally
+                    pdf.addImage(headerImgData, 'PNG', margin + (usableWidth - headerImgWidth) / 2, currentPosY, headerImgWidth, headerImgHeight);
+                    currentPosY += headerImgHeight + 5; // Add space below header (5mm gap)
+                }
+
+
+                // Add Schedule Table Image
+                if (scheduleCanvas) {
+                    const schedAspectRatio = scheduleCanvas.width / scheduleCanvas.height;
+                    let schedImgWidth = usableWidth; // Start by assuming it fits the full width
+                    let schedImgHeight = usableWidth / schedAspectRatio; // Calculate height based on width
+
+                     // Estimate space needed for signatures + gap (use actual captured height if possible, fallback to estimate)
+                     const sigsHeightEstimateMm = bottomSigsCanvas ? (bottomSigsCanvas.height / 3 * 0.264583) : 30; // Convert pixels (at scale 3) to mm (1 pixel = 0.264583 mm)
+                     const spaceForSigs = sigsHeightEstimateMm + 5; // 5mm gap below schedule
+
+                     // Calculate the maximum height the schedule image can take while leaving space for signatures below on the *current* page
+                     const remainingHeightOnCurrentPage = pdfHeight - currentPosY - margin;
+                     const maxSchedHeightOnCurrentPage = remainingHeightOnCurrentPage - spaceForSigs;
+
+
+                     if (schedImgHeight > maxSchedHeightOnCurrentPage) {
+                         // If it doesn't fit on the current page with space for sigs, add a new page
+                         pdf.addPage();
+                         currentPosY = margin; // Start from top on new page
+                          // Recalculate the height the schedule image can take on the *new* page
+                          const remainingHeightOnNewPage = pdfHeight - currentPosY - margin;
+                         const maxSchedHeightOnNewPage = remainingHeightOnNewPage - spaceForSigs;
+
+                         schedImgHeight = maxSchedHeightOnNewPage; // Scale height to fit the new page
+                         schedImgWidth = schedImgHeight * schedAspectRatio; // Recalculate width based on new height
+
+                          // Ensure width doesn't exceed usable width if height scaling made it too wide
+                         if (schedImgWidth > usableWidth) {
+                              schedImgWidth = usableWidth;
+                               schedImgHeight = usableWidth / schedAspectRatio; // Recalculate height based on max width
+                         }
+                     }
+
+                     // Final check to ensure height is valid and doesn't exceed remaining space
+                     const effectiveMaxSchedHeight = pdfHeight - currentPosY - margin - spaceForSigs;
+                      if (schedImgHeight > effectiveMaxSchedHeight || schedImgHeight <= 0) {
+                           console.warn(`Schedule image height (${schedImgHeight.toFixed(1)}mm) problematic for remaining space (${effectiveMaxSchedHeight.toFixed(1)}mm). Adjusting.`);
+                           schedImgHeight = Math.max(1, effectiveMaxSchedHeight); // Use available space, ensure at least 1mm
+                           schedImgWidth = schedImgHeight * schedAspectRatio;
+                           if (schedImgWidth > usableWidth) { // If scaling by height made it too wide
+                                schedImgWidth = usableWidth;
+                                schedImgHeight = usableWidth / schedAspectRatio;
+                           }
+                           if (schedImgHeight <= 0) schedImgHeight = 1; // Final check
+                      }
+
+
+                    const schedImgData = scheduleCanvas.toDataURL('image/png');
+                     // Add the schedule image, centered horizontally
+                    pdf.addImage(schedImgData, 'PNG', margin + (usableWidth - schedImgWidth) / 2, currentPosY, schedImgWidth, schedImgHeight);
+                    currentPosY += schedImgHeight + 5; // Add space below schedule (5mm gap)
+                } else {
+                    console.warn("Schedule canvas not available to add to PDF.");
+                }
+
+
+                 // Add Bottom Signatures Image (if captured successfully)
+                 if (bottomSigsCanvas) {
+                     const sigsAspectRatio = bottomSigsCanvas.width / bottomSigsCanvas.height;
+                     let sigsImgWidth = usableWidth; // Start by assuming it fits the full width
+                     let sigsImgHeight = usableWidth / sigsAspectRatio; // Calculate height based on width
+
+                      // Scale signature image down if it's too wide (shouldn't happen with usableWidth)
+                       if (sigsImgWidth > usableWidth) {
+                           sigsImgWidth = usableWidth;
+                           sigsImgHeight = sigsImgWidth / sigsAspectRatio;
+                       }
+
+                     // Check if signatures fit on the current page below the schedule
+                     if (currentPosY + sigsImgHeight > pdfHeight - margin) {
+                         pdf.addPage(); // Add a new page
+                         currentPosY = margin; // Start from top on new page
+                     }
+
+                     // Ensure height is at least 1mm
+                     if (sigsImgHeight <= 0) sigsImgHeight = 1;
+
+
+                     const sigsImgData = bottomSigsCanvas.toDataURL('image/png');
+                     // Add the signatures image, centered horizontally
+                     pdf.addImage(sigsImgData, 'PNG', margin + (usableWidth - sigsImgWidth) / 2, currentPosY, sigsImgWidth, sigsImgHeight);
+                     // currentPosY += sigsImgHeight; // No need to update position after the last element
+                 } else {
+                     console.warn("Signature canvas not available to add to PDF.");
+                 }
+
+
+                pdf.save('shift_schedule.pdf');
+
+             } catch (error) {
+                 console.error("Error generating PDF:", error);
+                 alert("Error generating PDF. Please try again. The content might be too wide/long for PDF capture.");
+             } finally {
+                 // Ensure styles are restored even on error
+                 restoreStyles();
+             }
+         }, 100); // Add a small delay to ensure style changes are applied
+    }
+
+
+    const scheduleTable=document.getElementById("scheduleTable");
+    const headerRow=scheduleTable.querySelector("thead tr");
+    const tbody=scheduleTable.querySelector("tbody");
+    const controlsDiv=document.getElementById("controls");
+
+    function renderSchedule(){
+      headerRow.innerHTML="<th>Name</th>";
+      tbody.innerHTML="";
+      controlsDiv.innerHTML="";
+
+      const selectedMonth=parseInt(document.getElementById("month").value);
+      const selectedYear=parseInt(document.getElementById("year").value);
+
+      const startDay=21;
+      let baseDate=new Date(selectedYear,selectedMonth,startDay);
+
+       const endMonth = (selectedMonth + 1) % 12;
+       const endYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+       const endDate = new Date(endYear, endMonth, 20);
+
+      const totalDays=Math.floor((endDate-baseDate)/(1000*60*60*24))+1;
+
+      if(totalDays<=0 || isNaN(totalDays) || totalDays > 60){
+           console.error("Invalid date range or calculation. totalDays:", totalDays);
+           tbody.innerHTML='<tr><td colspan="62">Error calculating date range or range is too large. Please select a different month/year.</td></tr>';
+           document.getElementById("titleDate").textContent=`Shift Scheduler (Invalid Date Range)`;
+           // Render headers for up to 60 days even if totalDays is bad, just to show something?
+           const weekdays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+           const headerDayLimit = Math.min(totalDays > 0 ? totalDays : 60, 60); // Ensure we don't try to render infinite headers if totalDays is bad
+           for(let i=0;i<headerDayLimit;i++){
+                 const d=new Date(baseDate); d.setDate(baseDate.getDate()+i);
+                 if (isNaN(d.getTime())) break; // Stop if date calculation is invalid
+                 const th=document.createElement("th");th.innerHTML=`${d.getDate()}<br>${weekdays[d.getDay()]}`;
+                 headerRow.appendChild(th);
+           }
+           return;
+      }
+
+      const weekdays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+      const titleStartDate=new Date(baseDate);
+      const titleEndDate=new Date(endDate);
+      document.getElementById("titleDate").textContent=`Shift Scheduler (${titleStartDate.getDate()} ${titleStartDate.toLocaleString('en',{month:'short'})} ${titleStartDate.getFullYear()} to ${titleEndDate.getDate()} ${titleEndDate.toLocaleString('en',{month:'short'})} ${titleEndDate.getFullYear()})`;
+
+      // Render Day headers
+      for(let i=0;i<totalDays;i++){
+        const d=new Date(baseDate);d.setDate(baseDate.getDate()+i);
+        const th=document.createElement("th");th.innerHTML=`${d.getDate()}<br>${weekdays[d.getDay()]}`;
+        headerRow.appendChild(th);
+      }
+
+      // --- Controls Rendering ---
+      const shiftAssignHeader=document.createElement('p');
+      shiftAssignHeader.textContent='Assign Shift Types:';
+      shiftAssignHeader.style.fontWeight='bold';
+      controlsDiv.appendChild(shiftAssignHeader);
+
+      names.forEach((name)=>{
+        const label=document.createElement("label");label.textContent=name+": ";
+        const select=document.createElement("select");
+        select.innerHTML=`<option value="day">Day</option><option value="night">Night</option><option value="reliever">Reliever</option>`;
+        select.dataset.name=name;
+        // Initialize shiftAssignment entry if it doesn't exist for this name
+        if (!shiftAssignments[name]) {
+             let defaultType = "night"; // Fallback default
+             const originalIndex = originalNames.indexOf(name);
+              if (originalIndex !== -1) {
+                 if (originalIndex >= 0 && originalIndex < 3) { defaultType = "day"; }
+                 else if (originalIndex >= 3 && originalIndex < 6) { defaultType = "night"; }
+                 else if (originalIndex === originalNames.length - 1) { defaultType = "reliever"; } // Assuming last original name is reliever
+              }
+            shiftAssignments[name] = { type: defaultType, schedule: {} };
+             console.log(`Initialized shiftAssignments for ${name} with type ${defaultType}`);
+        }
+        select.value=shiftAssignments[name]?.type || "night"; // Use the initialized type
+
+        select.addEventListener("change",function(){
+           const changedName=this.dataset.name;
+           const newType = this.value;
+           const oldType = shiftAssignments[changedName]?.type || "night"; // Get old type before changing
+
+           if(!shiftAssignments[changedName]){ // Should not happen with the initialization above, but good safety check
+                console.warn(`shiftAssignments for ${changedName} not found during type change listener. Initializing.`);
+                shiftAssignments[changedName]={type:newType,schedule:{}};
+           } else {
+              shiftAssignments[changedName].type=newType;
+           }
+
+           // Clear manual schedule overrides if changing to/from reliever, or if old type was invalid
+           if (oldType === 'reliever' || newType === 'reliever' || !['day', 'night', 'reliever'].includes(oldType) ) {
+              console.log(`Clearing schedule overrides for ${changedName} due to type change from ${oldType} to ${newType}.`);
+              shiftAssignments[changedName].schedule = {};
+           } else {
+               console.log(`Type change for ${changedName} from ${oldType} to ${newType}. Schedule overrides kept.`);
+           }
+
+           renderSchedule(); // Re-render to reflect new default schedule and update counts
+        });
+        controlsDiv.appendChild(label);controlsDiv.appendChild(select);controlsDiv.appendChild(document.createElement("br"));
+      });
+
+       controlsDiv.appendChild(document.createElement('hr'));
+
+       const omvSelectGroupDiv=document.createElement('div');
+       omvSelectGroupDiv.className='omv-select-group';
+       const omvAssignHeader=document.createElement('p');
+       omvAssignHeader.textContent='Assign OMV Hostel Personnel:';
+       omvSelectGroupDiv.appendChild(omvAssignHeader);
+
+      function createOmvSelect(assignVariable){
+          const label=document.createElement("label");
+          label.textContent=`OMV Person ${assignVariable==='omvAssignment1'?'1':'2'}: `;
+          const select=document.createElement("select");
+           const emptyOption = document.createElement("option");
+           emptyOption.value = "";
+           emptyOption.textContent = "-- Select --";
+           select.appendChild(emptyOption);
+          names.forEach(name=>{
+              const option=document.createElement("option");
+              option.value=name;
+              option.textContent=name;
+              select.appendChild(option);
+          });
+          select.value=(assignVariable==='omvAssignment1'?omvAssignment1:omvAssignment2);
+
+          select.addEventListener("change",function(){
+              const selectedName=this.value;
+              const currentOmv1 = omvAssignment1;
+              const currentOmv2 = omvAssignment2;
+
+              let otherAssignmentValue;
+              if (assignVariable === 'omvAssignment1') {
+                   otherAssignmentValue = currentOmv2;
+              } else {
+                   otherAssignmentValue = currentOmv1;
+              }
+
+              if(selectedName && selectedName === otherAssignmentValue && selectedName !== ""){
+                  alert(`${selectedName} is already assigned to the other OMV slot.`);
+                  this.value = (assignVariable === 'omvAssignment1' ? currentOmv1 : currentOmv2); // Revert selection
+                  return;
+              }
+
+              if(assignVariable==='omvAssignment1'){
+                   const oldOmv1 = omvAssignment1;
+                   omvAssignment1 = selectedName;
+                    // Clear schedule overrides for the person just made OMV1, *if* they were not already OMV2
+                    if (selectedName && shiftAssignments[selectedName] && selectedName !== oldOmv2) {
+                       console.log(`Clearing schedule overrides for ${selectedName} as they became OMV1 (and weren't OMV2).`);
+                        shiftAssignments[selectedName].schedule = {};
+                    }
+                    // Clear schedule overrides for the person who was OLD OMV1, *if* they are no longer OMV at all
+                   const isOldOmv1StillOmv2 = omvAssignment2 === oldOmv1;
+                   if (oldOmv1 && !isOldOmv1StillOmv2 && shiftAssignments[oldOmv1]) {
+                        console.log(`Clearing schedule overrides for previous OMV1 (${oldOmv1}) as they are no longer OMV.`);
+                       shiftAssignments[oldOmv1].schedule = {};
+                   }
+
+              }else{ // assignVariable === 'omvAssignment2'
+                  const oldOmv2 = omvAssignment2;
+                  omvAssignment2 = selectedName;
+                    // Clear schedule overrides for the person just made OMV2, *if* they were not already OMV1
+                    if (selectedName && shiftAssignments[selectedName] && selectedName !== oldOmv1) {
+                         console.log(`Clearing schedule overrides for ${selectedName} as they became OMV2 (and weren't OMV1).`);
+                       shiftAssignments[selectedName].schedule = {};
+                   }
+                    // Clear schedule overrides for the person who was OLD OMV2, *if* they are no longer OMV at all
+                   const isOldOmv2StillOmv1 = omvAssignment1 === oldOmv2;
+                   if (oldOmv2 && !isOldOmv2StillOmv1 && shiftAssignments[oldOmv2]) {
+                        console.log(`Clearing schedule overrides for previous OMV2 (${oldOmv2}) as they are no longer OMV.`);
+                       shiftAssignments[oldOmv2].schedule = {};
+                   }
+              }
+               console.log(`OMV assignments updated: OMV1=${omvAssignment1}, OMV2=${omvAssignment2}`);
+
+              renderSchedule(); // Re-render to reflect OMV section and update counts
+          });
+          omvSelectGroupDiv.appendChild(label);
+          omvSelectGroupDiv.appendChild(select);
+          omvSelectGroupDiv.appendChild(document.createElement("br"));
+      }
+
+      createOmvSelect('omvAssignment1');
+      createOmvSelect('omvAssignment2');
+      controlsDiv.appendChild(omvSelectGroupDiv);
+
+      // Determine final rendering order and identify OMV personnel
+      const currentOmvNames=[omvAssignment1,omvAssignment2].filter(name=>name&&names.includes(name));
+      const currentNonOmvNames=names.filter(name=>!currentOmvNames.includes(name));
+
+       // Separate non-OMV by type for ordering
+      const allNonOmvDay = currentNonOmvNames.filter(n => shiftAssignments[n]?.type === "day");
+      const allNonOmvNight = currentNonOmvNames.filter(n => shiftAssignments[n]?.type === "night");
+      const allNonOmvReliever = currentNonOmvNames.filter(n => shiftAssignments[n]?.type === "reliever");
+       // Catch any names with invalid or missing types
+      const allNonOmvOther = currentNonOmvNames.filter(n => !shiftAssignments[n] || !["day", "night", "reliever"].includes(shiftAssignments[n]?.type));
+
+
+      // Combine into final rendering order: Day non-OMV, Night non-OMV, Reliever non-OMV, Other non-OMV, then OMV
+      const finalOrderedNames=[...allNonOmvDay, ...allNonOmvNight, ...allNonOmvReliever, ...allNonOmvOther, ...currentOmvNames];
+
+      // --- Initialize counts for each day ---
+       const countsPerDay = Array(totalDays).fill(null).map(() => ({ day: 0, night: 0, off: 0 }));
+
+
+      let omvHeaderRendered = false;
+
+      finalOrderedNames.forEach((name,index)=>{ // 'index' here is the index in the finalOrderedNames array
+         const isOmv = currentOmvNames.includes(name);
+
+         // Add OMV separator and header before the first OMV name if any OMV are assigned
+         if (isOmv && !omvHeaderRendered && currentOmvNames.length > 0) {
+            const separatorTr = document.createElement("tr");
+            const separatorTd = document.createElement("td");
+            separatorTd.colSpan = 1 + totalDays;
+            separatorTd.className = "separator-cell";
+            separatorTr.appendChild(separatorTd);
+            tbody.appendChild(separatorTr);
+
+            const omvHeaderRow=document.createElement("tr");
+            const omvHeaderCell=document.createElement("td");
+            omvHeaderCell.textContent="OMV Hostel";
+            omvHeaderCell.colSpan=1+totalDays;
+            omvHeaderCell.className="omv-header-cell";
+            omvHeaderRow.appendChild(omvHeaderCell);
+            tbody.appendChild(omvHeaderRow);
+
+            omvHeaderRendered=true;
+         }
+
+        const tr=document.createElement("tr");
+        const nameTd=document.createElement("td");
+        nameTd.className="dropdown-cell name-cell"; // Keep sticky behavior for names
+        const nameInput=document.createElement("input");
+        nameInput.type="text";nameInput.value=name;nameInput.className="name-edit";
+        nameInput.dataset.originalName=name;
+
+        // Event listener for name editing
+        nameInput.addEventListener("blur",function(){
+          const oldName=this.dataset.originalName;
+          const newName=this.value.trim();
+          const oldNameIndexInNamesArray=names.indexOf(oldName);
+
+          if(newName&&newName!==oldName){
+              const nameExists = names.some((n,i)=> i !== oldNameIndexInNamesArray && n === newName); // Check if new name exists (excluding the current one)
+
+              if(nameExists) {
+                  alert(`Name "${newName}" already exists.`);
+                  this.value=oldName; // Revert input value
+                  return;
+              }
+
+             // Transfer shift assignments to new name
+             if(shiftAssignments[oldName]){
+                shiftAssignments[newName]={...shiftAssignments[oldName]};
+                delete shiftAssignments[oldName];
+             } else {
+                 // Should not happen if shiftAssignments is initialized properly, but as safety
+                 shiftAssignments[newName]={type:"night",schedule:{}};
+                 console.warn(`shiftAssignments for ${oldName} not found during rename. Initializing new entry.`);
+             }
+
+             // Update names array
+             if(oldNameIndexInNamesArray > -1){
+                 names[oldNameIndexInNamesArray]=newName;
+             } else {
+                 console.error(`Old name "${oldName}" not found in names array during blur.`);
+                 this.value=oldName; // Revert input value
+                 alert(`Internal error: Could not find "${oldName}" in list.`);
+                 return;
+             }
+
+             // Update OMV assignments if necessary
+             if(omvAssignment1 === oldName) omvAssignment1 = newName;
+             if(omvAssignment2 === oldName) omvAssignment2 = newName;
+
+             this.dataset.originalName=newName; // Update original name dataset
+             renderSchedule(); // Re-render the whole schedule
+          } else if (!newName) { // Handle deletion
+             // Prevent deletion if assigned as OMV
+             if(omvAssignment1 === oldName || omvAssignment2 === oldName) {
+                 alert(`Cannot delete "${oldName}". They are currently assigned as OMV Personnel. Please unassign them first.`);
+                 this.value=oldName; // Revert input value
+                 return;
+             }
+
+             // Confirm deletion
+             if(confirm(`Are you sure you want to delete "${oldName}"? This cannot be undone easily.`)){
+                 const indexToRemove = names.indexOf(oldName);
+                 if (indexToRemove > -1) {
+                    names.splice(indexToRemove, 1); // Remove name from list
+                 }
+                 delete shiftAssignments[oldName]; // Remove shift assignment data
+                 // OMV assignments don't need update here as we already checked they weren't OMV
+                 renderSchedule(); // Re-render the whole schedule
+             } else {
+                 this.value=oldName; // Revert input value if deletion cancelled
+             }
+          } else {
+             this.value=oldName; // Revert input value if no change or just whitespace
+          }
+        });
+        nameTd.appendChild(nameInput);
+        tr.appendChild(nameTd);
+
+        // Get the assigned default shift type for this person
+        const assignedShiftType = shiftAssignments[name]?.type||"night"; // Default to night if type missing
+
+        // Loop through each day to determine and render shift, and calculate counts
+        for(let d=0;d<totalDays;d++){
+          const td=document.createElement("td");
+          let defaultState, defaultClass;
+
+          // Determine default state based on assigned type and day index 'd'
+          if (assignedShiftType === "reliever") {
+             const cyclePos=d%7;
+             if(cyclePos>=0&&cyclePos<=2){ defaultState="Day"; defaultClass="reliever-day"; }
+             else if(cyclePos>=3&&cyclePos<=5){ defaultState="Night"; defaultClass="reliever-night"; }
+             else { defaultState="Off"; defaultClass="off"; }
+          } else { // Default for "day" or "night" types
+              // Apply the 'Off' day logic based on the rendered index (0-5) in the non-OMV section
+              // Check if this name is among the first 6 non-OMV in the final rendering order
+              const nonOmvNamesBeforeThis = finalOrderedNames.slice(0, index).filter(n => !currentOmvNames.includes(n));
+              const currentNonOmvRenderIndex = nonOmvNamesBeforeThis.length; // This is the effective rendered index within the non-OMV group
+
+              if (currentNonOmvRenderIndex >= 0 && currentNonOmvRenderIndex < 6) {
+                   const initialOffDayIndexOffset = currentNonOmvRenderIndex;
+                   if (d >= initialOffDayIndexOffset && (d - initialOffDayIndexOffset) % 7 === 0) {
+                       defaultState = "Off"; defaultClass="off";
+                   } else {
+                       defaultState = assignedShiftType.charAt(0).toUpperCase() + assignedShiftType.slice(1);
+                       defaultClass = assignedShiftType.toLowerCase();
+                   }
+              } else {
+                  // Names beyond the first 6 non-OMV just follow their type by default
+                  defaultState = assignedShiftType.charAt(0).toUpperCase() + assignedShiftType.slice(1);
+                  defaultClass = assignedShiftType.toLowerCase();
+              }
+          }
+
+
+          // Check for manual override in saved schedule
+          const savedShift = shiftAssignments[name]?.schedule?.[d];
+
+          let finalState, finalClass;
+          if (savedShift) {
+              finalState = savedShift;
+              finalClass = savedShift.toLowerCase();
+               // Note: Manual overrides currently just use day/night/off classes, not reliever-day/night visual styles.
+          } else {
+              // Use default state if no override
+              finalState = defaultState;
+              finalClass = defaultClass;
+          }
+
+          // Increment counts based on the *finalState* for this day
+          const stateForCount = finalState.toLowerCase();
+          if (stateForCount === 'day') {
+              countsPerDay[d].day++;
+          } else if (stateForCount === 'night') {
+              countsPerDay[d].night++;
+          } else if (stateForCount === 'off') {
+              countsPerDay[d].off++;
+          }
+
+
+          // Render the cell
+          td.textContent = finalState;
+           td.classList.remove('day', 'night', 'off', 'reliever-day', 'reliever-night'); // Remove all potential shift classes
+          td.classList.add(finalClass); // Add the determined class
+          td.classList.add('editable'); // Keep editable class
+
+
+          // Add click listener for manual override
+          td.addEventListener("click",function(){
+             // Determine the next shift state based on the current text content
+             const current=this.textContent;
+             let next=current==="Day"?"Night":current==="Night"?"Off":"Day";
+
+             let nextClass=next.toLowerCase();
+              // Determine the correct class for the next state based *only* on the state value (Day/Night/Off)
+              if (nextClass === 'day') nextClass = 'day';
+              else if (nextClass === 'night') nextClass = 'night';
+              else if (nextClass === 'off') nextClass = 'off';
+              // Manual overrides always use the basic day/night/off classes, ignoring the person's base type (reliever vs regular) for the override visual.
+
+             this.textContent=next; // Update cell text
+              this.classList.remove('day', 'night', 'off', 'reliever-day', 'reliever-night'); // Remove old classes
+              this.classList.add(nextClass); // Add new class
+
+
+             // Save the manual override
+             if (!shiftAssignments[name].schedule) {
+                 shiftAssignments[name].schedule = {};
+             }
+             // Save the actual state string ('Day', 'Night', 'Off')
+             shiftAssignments[name].schedule[d] = next;
+             console.log(`Manual override saved for ${name} on day index ${d}: ${next}`);
+
+             // --- Auto-propagate 'Off' days for the first 6 non-OMV rows ---
+             // Check if this person is one of the first 6 non-OMV in the current render order
+             const clickedPersonIndexInFinalOrder = finalOrderedNames.indexOf(name);
+             const nonOmvNamesUpToIndex = finalOrderedNames.slice(0, clickedPersonIndexInFinalOrder).filter(n => !currentOmvNames.includes(n));
+             const clickedRowNonOmvRenderIndex = nonOmvNamesUpToIndex.length;
+
+
+             // Only trigger auto-propagation if the clicked state is 'Off' and the person is one of the first 6 non-OMV
+             if(next==="Off" && clickedRowNonOmvRenderIndex >= 0 && clickedRowNonOmvRenderIndex < 6 ){
+                console.log(`Applying Auto-Off propagation for row index ${clickedRowNonOmvRenderIndex} (${name}) starting from day index ${d}.`);
+                const clickedDate=new Date(baseDate);clickedDate.setDate(baseDate.getDate()+d);
+                let loopCounter=1;
+                while(true){
+                  const nextOffDate=new Date(clickedDate);
+                  nextOffDate.setDate(clickedDate.getDate()+(7*loopCounter)); // Calculate date 7 days later
+                  const nextOffDayIndex=Math.floor((nextOffDate-baseDate)/(1000*60*60*24)); // Convert date back to day index
+
+                  if(nextOffDayIndex>=0&&nextOffDayIndex<totalDays){ // Check if target day is within the schedule range
+                       const clickedTr = this.parentNode;
+                      const targetTd=clickedTr.cells[nextOffDayIndex+1]; // Get the target cell (index + 1 because of name column)
+
+                      if(targetTd){
+                          const targetDaySavedShift = shiftAssignments[name]?.schedule?.[nextOffDayIndex];
+                          // Only auto-set if there's NO existing manual override for the target day, or if the override is already 'Off'
+                          const hasConflictingManualOverride = targetDaySavedShift && targetDaySavedShift !== 'Off';
+
+                          if (!hasConflictingManualOverride) {
+                               // Apply 'Off' state visually and in data
+                               targetTd.textContent="Off";
+                               targetTd.classList.remove('day', 'night', 'off', 'reliever-day', 'reliever-night');
+                               targetTd.classList.add("off");
+
+                               // Save the 'Off' override if it wasn't already 'Off' manually
+                               if (!shiftAssignments[name].schedule) { shiftAssignments[name].schedule = {}; }
+                               if (targetDaySavedShift !== 'Off') {
+                                    shiftAssignments[name].schedule[nextOffDayIndex] = 'Off';
+                                    console.log(`  Auto-set ${name} to Off on day index ${nextOffDayIndex}.`);
+                               } else {
+                                    console.log(`  Skipping auto-set save for ${name} on day index ${nextOffDayIndex} as it was already Off.`);
+                               }
+                          } else {
+                              console.log(`  Skipping auto-set for ${name} on day index ${nextOffDayIndex} due to existing manual override: ${targetDaySavedShift}.`);
+                          }
+                      } else {
+                           console.log(`  Target cell not found for ${name} at column index ${nextOffDayIndex + 1}.`);
+                      }
+                      loopCounter++; // Check next week
+                  }else {
+                      console.log(`  Next Off date index ${nextOffDayIndex} is outside totalDays range (${totalDays}). Stopping loop.`);
+                      break; // Stop if we are outside the schedule range
+                  }
+                }
+             }
+
+             // After any change (manual click or auto-propagation), re-calculate and re-render the counts
+             // This is simpler than trying to update counts incrementally
+              renderSchedule(); // Re-render the whole schedule including updated counts
+
+          });
+          tr.appendChild(td); // Add the day cell to the row
+        }
+        tbody.appendChild(tr); // Add the person's row to the table
+
+      }); // End of finalOrderedNames.forEach loop
+
+
+      // --- Add Calculation Rows at the bottom ---
+       const countRowLabels = ["Day Count", "Night Count", "Off Count"];
+       const countRowKeys = ["day", "night", "off"];
+       const countRowClasses = ["day-count-row", "night-count-row", "off-count-row"]; // For CSS styling
+
+       countRowLabels.forEach((label, rowIndex) => {
+           const countTr = document.createElement("tr");
+           countTr.classList.add('count-row', countRowClasses[rowIndex]); // Add base and specific class
+
+           const labelTd = document.createElement("td");
+           labelTd.textContent = label;
+           labelTd.className = "name-cell"; // Use name-cell class for potential sticky left
+           labelTd.style.fontWeight = 'bold'; // Make the label bold
+           countTr.appendChild(labelTd);
+
+           const countKey = countRowKeys[rowIndex];
+           for (let d = 0; d < totalDays; d++) {
+               const countTd = document.createElement("td");
+               countTd.textContent = countsPerDay[d][countKey]; // Display the calculated count
+                // Optional: add classes for styling individual count cells if needed
+               countTr.appendChild(countTd);
+           }
+           tbody.appendChild(countTr); // Add the count row to the table
+       });
+
+
+    } // End of renderSchedule function
+
+
+    // --- Initial Setup ---
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const yearSelect = document.getElementById('year');
+
+     // Ensure current year is in the year select options
+     let currentYearOptionExists = false;
+     for (let i = 0; i < yearSelect.options.length; i++) {
+        if (parseInt(yearSelect.options[i].value) === currentYear) {
+            currentYearOptionExists = true;
+            break;
+        }
+     }
+    if (!currentYearOptionExists) {
+        const option = document.createElement('option');
+        option.value = currentYear;
+        option.textContent = currentYear;
+        yearSelect.appendChild(option);
+    }
+     // Sort year options
+     Array.from(yearSelect.options)
+         .sort((a, b) => parseInt(a.value) - parseInt(b.value))
+         .forEach(option => yearSelect.add(option));
+
+
+    // Try loading saved schedule first
+    const loaded = loadSchedule();
+
+    // If no saved data or load failed, initialize with defaults
+    if (!loaded) {
+         console.log("No saved data or load failed. Initializing with default data.");
+         names = [...originalNames]; // Reset names to original list
+         shiftAssignments = {}; // Clear assignments
+         // Initialize default shift types based on original names list order
+         originalNames.forEach((name, index) => {
+            let defaultType = "night";
+            if (index >= 0 && index < 3) {
+              defaultType = "day";
+            } else if (index >= 3 && index < 6) {
+              defaultType = "night";
+            } else if (index === originalNames.length - 1) { // Last original name is reliever
+              defaultType = "reliever";
+            }
+             shiftAssignments[name] = { type: defaultType, schedule: {} };
+         });
+
+         // Initialize default OMV assignments based on original names list
+         omvAssignment1 = originalNames.includes("Ganesan") ? "Ganesan" : originalNames[originalNames.length > 1 ? originalNames.length - 2 : 0] || "";
+         omvAssignment2 = originalNames.includes("Antony") ? "Antony" : originalNames[originalNames.length > 0 ? originalNames.length - 1 : 0] || "";
+
+
+         // Set default month/year to current month/year
+         document.getElementById("month").value = today.getMonth();
+         yearSelect.value = currentYear;
+
+         // Render schedule for the first time with defaults
+         renderSchedule();
+    }
+
+    // Ensure all current 'names' have an entry in shiftAssignments upon startup
+    names.forEach(name => {
+       if (!shiftAssignments[name]) {
+           let defaultType = "night"; // Fallback
+           const originalIndex = originalNames.indexOf(name);
+            if (originalIndex !== -1) {
+               if (originalIndex >= 0 && originalIndex < 3) { defaultType = "day"; }
+               else if (originalIndex >= 3 && originalIndex < 6) { defaultType = "night"; }
+               else if (originalIndex === originalNames.length - 1) { defaultType = "reliever"; }
+            }
+           shiftAssignments[name] = { type: defaultType, schedule: {} };
+           console.warn(`Initialized missing shiftAssignments for name: ${name} after load/init.`);
+       }
+    });
+
+     // Clean up shiftAssignments entries for names that no longer exist
+     for (const name in shiftAssignments) {
+        if (!names.includes(name)) {
+             delete shiftAssignments[name];
+             console.warn(`Removed shiftAssignments entry for deleted name after load/init: ${name}`);
+        }
+     }
+
+
+  </script>
+
+</div> <!-- end of mainContent -->
+
+<script>
+  const ADMIN_PASS = "vettri123"; // Change this password if needed
+
+  function checkPassword() {
+    const input = document.getElementById("adminPassword").value;
+    const errorMsg = document.getElementById("errorMsg");
+    if (input === ADMIN_PASS) {
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("mainContent").style.display = "block";
+    } else {
+      errorMsg.textContent = "Incorrect password. Please try again.";
+    }
+  }
+</script>
+
+</body>
+</html>
